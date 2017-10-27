@@ -1,0 +1,16 @@
+﻿
+{
+	"websitename":"mojtrg",
+	"images":"id(fotorama)",
+	"pickInList":
+	{
+	"naslov":
+	},
+	"path":[{"FiksniBrojStrana":1554,"nacin":"Izdavanje",type:"stan","put":"/Oglasi/Cela-Srbija/Stanovi?Sort=DateDesc&Types=ForRent"}],
+	"class":[".row.row-listing.colored",".row.row-listing"],
+	"existingPromoClasses":[".row.row-listing.colored",".row.row-listing"],
+	"phantomSupport":"false",
+	"shouldCrawl":1,
+	"defaultImage":"/Content/Images/nothumbnail.png"
+
+}
