@@ -1,16 +1,82 @@
 ﻿
 {
-	"websitename":"mojtrg",
-	"images":"id(fotorama)",
-	"pickInList":
+"websitename":"4zida",
+"isJSON":1,
+"pickInList":
+{
+	"link":"children().eq(0).attr(href)",
+	"cena":"children().eq(1).children().eq(0).children().eq(1).text()",
+	"kvadratura":"children().eq(1).children().eq(1).children().eq(1).children().eq(1).children().eq(0).children().eq(1).children().eq(0).children().eq(0).children().eq(3).text()",
+	"naslov":"children().eq(1).children().eq(1).children().eq(1).children().eq(0).children().eq(0).text()"
+},
+"images":{"field":"images","parameter":"url"},
+"class":{"1":".row.clearfix.item.featured-ad-style","2":".row.clearfix.item"},
+"vrsta":{"putanja":"attr(class)","UkupanBroj":"2"},
+"path":[{"FiksniBrojStrana":500,"nacin":"prodaja","tip":"zemljiste","put":"/v3/lots?for=sale&sort=createdAt&page="},{"FiksniBrojStrana":500,"nacin":"Izdavanje","tip":"stan","put":"/v3/apartments?for=rent&sort=createdAt&page="},{"FiksniBrojStrana":500,"nacin":"prodaja","tip":"stan","put":"/v3/apartments?for=sale&sort=createdAt&page="}],
+"data":{"1":"class(col-lg-12 col-md-12 col-sm-12 col-xs-12 ad-other-specs).html()","1":"class(col-lg-12 col-md-12 col-sm-12 col-xs-12 ad-description).html()"},
+"host":"https://api.4zida.rs",
+"binders":{"a":"kvadratura","url":"link","desc":"opis","price":"cena","m2":"kvadratura","inhabitable":{"addTo":"bottom_row*","addLike":"useljivo"}},
+"existingPromoClasses":["1"],
+"vrsta":{"UkupanBroj":1},
+"shouldCrawl":0
+}
+&&||
+{
+"websitename":"halooglasi",
+"images":"id(fotorama)",
+"id":"attr(id)",
+"pickInList":
 	{
-	"naslov":
+	"datum":"children().eq(3).children().eq(2).children().eq(0).text()",
+	"naslov":"children().eq(4).children().eq(0).children().eq(0).text()",
+	"cena":"children().eq(2).children().eq(0).attr(data-value)",
+	"link":"children().eq(3).children().eq(1).children().eq(0).attr(href).text()",
+	"slika":"children().eq(3).children().eq(1).children().eq(0).children().eq(0).attr(src).text()",
+	"kvadratura":"children().eq(4).children().eq(2).children().eq(1).children().eq(0).text().returnStringBeforeValues([\"Površina\",\"Kvadratura\"])"
 	},
-	"path":[{"FiksniBrojStrana":1554,"nacin":"Izdavanje",type:"stan","put":"/Oglasi/Cela-Srbija/Stanovi?Sort=DateDesc&Types=ForRent"}],
-	"class":[".row.row-listing.colored",".row.row-listing"],
-	"existingPromoClasses":[".row.row-listing.colored",".row.row-listing"],
-	"phantomSupport":"false",
-	"shouldCrawl":1,
-	"defaultImage":"/Content/Images/nothumbnail.png"
+"pickInAdvert":
+{
+"lokacija":"class(ad-details-desc).text()"
+},
+"lokacijaOptions":{"format":"$ulica;-$oblast;-$grad;-$drzava;", "charsToDelete":"/()_"},
+"datumSetup":{"deliminator":".","format":"d/m/y"},
+"data":{"1":"class(datasheet ad-basic-details).html()","2":"id(tabcontent2).html()"},
+"binders":{"Vrsta poljopr. zemljišta":"!@#vrsta_polj_zemljista","Vrsta zemljišta":"!@#vrsta_zemljista","Površina placa":"!@#povrs_placa","Broj soba":"!@#brojsoba","Stanje objekta":"!@#luxuznost","Nameštenost":"!@#namestenost","Način plaćanja":"!@#nacin_placanja","Oglašivač":"!@#oglasavac","Tip objekta":"!@#stanje_objekta","Grejanje":"!@#grejanje","Sprat":"!@#br_sprat","Ukupna spratnost":"!@#ukupno_spratova","Ostalo":"!@#upper_row*","Dodatni opis":"!@#opis","Dodatno":"!@#middle_row*"},
+"host":"www.halooglasi.com",
 
+
+"path":{"7":{"FiksniBrojStrana":483,"nacin":"Izdavanje","tip":"stan","put":"/nekretnine/izdavanje-stanova?page="},"2":{"FiksniBrojStrana":2674,"nacin":"prodaja","tip":"stan","put":"/nekretnine/prodaja-stanova?page="},"3":{"FiksniBrojStrana":788,"nacin":"prodaja","tip":"kuca","put":"/nekretnine/prodaja-kuca?page="},"4":{"FiksniBrojStrana":37,"nacin":"Izdavanje","tip":"kuca","put":"/nekretnine/izdavanje-kuca?page="},"1":{"FiksniBrojStrana":246,"nacin":"prodaja","tip":"zemljiste","put":"/nekretnine/prodaja-zemljista?page="},"6":{"FiksniBrojStrana":4,"nacin":"Izdavanje","tip":"zemljiste","put":"/nekretnine/izdavanje-zemljista?page="},"5":{"FiksniBrojStrana":36,"nacin":"Izdavanje","tip":"soba","put":"/nekretnine/izdavanje-soba?page="}},
+"class":[".product-item.product-list-item.Premium.real-estates.my-ad-placeholder",".product-item.product-list-item.Top.real-estates.my-ad-placeholder",".product-item.product-list-item.Standard.real-estates.my-ad-placeholder"],
+"existingPromoClasses":[" product-item product-list-item Premium real-estates my-ad-placeholder"," product-item product-list-item Top real-estates my-ad-placeholder"," product-item product-list-item Standard real-estates my-ad-placeholder"],
+"vrsta":{"putanja":"attr(class)","UkupanBroj":3},
+"phantomSupport":"true",
+"shouldCrawl":1,
+"defaultImage":"/Content/Quiddita/Widgets/Product/Stylesheets/img/no-image.jpg"
+}
+&&||
+{
+"websitename":"nekretnine",
+"images":"id(images)",
+"pickInList":
+	{
+	"datum":"children().eq(1).children().eq(1).text()",
+	"kvadratura":"children().eq(1).children().eq(2).children().eq(1).text().returnStringBeforeValues([\",\"])",
+	"cena":"children().eq(1).children().eq(2).children().eq(1).text().returnStringAfterChar(,)",
+	"naslov":"children().eq(1).children().eq(0).text()",
+	"link":"children().eq(0).attr(href)",
+	"slika":"children().eq(0).children().eq(0).attr(src)"
+	},
+"lokacijaOptions":{"format":"$ulica;,$oblast;,$grad;,$drzava;", "charsToDelete":"()-_"},
+"datumSetup":{"deliminator":".","format":"d/m/y","spliter":{"splitString":"|","index":0}},
+"data":{"1":"class(fixed oglasData).children().eq(0).children().eq(1).html()","2":"class(fixed oglasData).children().eq(1).children().eq(0).html()","3":"class(fixed oglasData).children().eq(1).children().eq(1).html()"},
+"binders":{"Tip (Poljoprivredna zemljišta):":"!@#bottom_row*","Tip (Kuće):":"!@#tip_stana","Opis:":"!@#opis","Vrsta goriva:":"!@#vrsta_goriva","Tip (Stanovi):":"!@#tip_stana","Gradski prevoz:":"!@#bottom_row*","Vrsta grejanja:":"!@#grejanje","Pomagala:":"!@#pomagala","ID:":"!@#ID","Objavljen:":"!@#datum", "Ažuriran:":"!@#Azuriran","Adresa:":"!@#lokacija","Oglas od:":"!@#oglasavac","Sobe:":"!@#brojsoba","Na spratu:":"!@#br_sprat","Uknjiženo:":"!@#uknjizeno","Kupatila:":"!@#kupatila","Prateći objekti/ površine:":"!@#middle_row*","Oprema:":"!@#upper_row*","Tehnička opremljenost:":"!@#upper_row*","Stanje objekta:":"!@#stanje_objekta","Ukupno Spratova:":"!@#ukupno_spratova","Godina izgradnje:":"!@#god_izgradnje"},
+"host":"www.nekretnine.rs",
+"path":[{"FiksniBrojStrana":1554,"nacin":"Izdavanje","tip":"stan","put":"/stambeni-objekti/stanovi/izdavanje-prodaja/izdavanje/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"},{"FiksniBrojStrana":214,"nacin":"prodaja","tip":"stan","put":"/stambeni-objekti/stanovi/izdavanje-prodaja/prodaja/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"},{"FiksniBrojStrana":21,"nacin":"Izdavanje","tip":"kuca","put":"/stambeni-objekti/kuce/izdavanje-prodaja/izdavanje/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"},{"FiksniBrojStrana":201,"nacin":"prodaja","tip":"kuca","put":"/stambeni-objekti/kuce/izdavanje-prodaja/prodaja/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"},{"FiksniBrojStrana":59,"nacin":"prodaja","tip":"zemljiste","put":"/zemljista/izdavanje-prodaja/prodaja/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"},{"FiksniBrojStrana":1,"nacin":"Izdavanje","tip":"zemljiste","put":"/zemljista/izdavanje-prodaja/izdavanje/poredjaj-po/datumu_nanize/lista/po_stranici/50/stranica/"}],
+"slikaadd":"http://www.nekretnine.rs",
+"class":[".resultList.fixed"],
+"existingPromoClasses":["icon icon_t topPonuda","012"],
+"vrsta":{"putanja":"children().eq(0).children().eq(1).attr(class)","UkupanBroj":2},
+"phantomSupport":"false",
+"shouldCrawl":1,
+"defaultImage":"/resources/images/search/no_image_2x.png"
 }

@@ -1,24 +1,35 @@
 var mongo=require('./mongo.js');
 var getData=require('./GetData.js')
 var crawl=require('./crawl.js');
+var fs=require('fs')
+var async=require('async')
+var ObjectID = require('mongodb').ObjectID
 var db;
 var websiteListing=[];
 mongo.MongoWrapper(function(mongoCon)
 {
     db=mongoCon;
-})
-fs.readFileSync('q.txt',function(err,res)
-{
-    if(err)throw err
-    else
+    fs.readFile('q.txt',"utf8",function(err,res)
     {
-        res=JSON.parse(res);
-        for(var i in res)
+        if(err)throw err
+        else
         {
-            websiteListing[res[i].websitename]=res[i];
+
+            res=res.substr(1);
+            res=res.split("&&||");
+            
+            for(var i in res)
+            {
+                res[i]=JSON.parse(res[i]);
+                websiteListing[res[i].websitename]=res[i];
+            }
+            startRefreshing();//start of program
+            //processFewAdverts([{'websitename':'halooglasi','link':'http://www.halooglasi.com/nekretnine/prodaja-zemljista/na-prodaju-plac-od-112-ari-u-pancevu/5425487381592','phantomSupport':'true'}]);
         }
-    }
+    })
+   
 })
+
 function startRefreshing()
 {
    
@@ -30,7 +41,7 @@ function startRefreshing()
         {
             async.eachSeries(res,function(collectionForScraping,done)
             {
-                refreshCollection(collectionForScraping,function()
+                refreshCollection(collectionForScraping.ime,function()
                 {
                     done();
                 })
@@ -42,8 +53,11 @@ function startRefreshing()
 var numberToProcess=20;
 function refreshCollection(collection,callback)
 {
-    db.find().toArray(function(err,allAdverts)
+    var dbCollection=db.collection(collection);
+    console.log('request started for collection:'+collection);
+    dbCollection.find(/*{websitename:"nekretnine"}*/).toArray(function(err,allAdverts)
     {
+        console.log('adverts retrived:'+allAdverts.length)
         if(err)throw err
         else
         {
@@ -57,42 +71,88 @@ function refreshCollection(collection,callback)
                     skipCoef=-1;
                 }
                 else skipCoef++;
-                processFewAdverts(arrayPart,function()
+                processFewAdverts(arrayPart,dbCollection,function()
                 {
                     if(skipCoef==-1)return;
                     else recurse();
                 });
             }
+            recurse();
             
             
         }
     })
 }
 
-function processFewAdverts(advertsToProcess,callback)
+function processFewAdverts(advertsToProcess,dbCollection,callback)
 {
+    console.log('few adverts started to process:'+advertsToProcess.length)
         async.each(advertsToProcess,function(advert,finish)
         {
             var qTextVersion=websiteListing[advert.websitename];
             var phantomSupport=websiteListing[advert.websitename].phantomSupport
             
-            
+            if(advert.websitename=='halooglasi')
+                {
+                    if(advert.link.indexOf('http://')!=-1)
+                    {
+                        //console.log('AAAAAA')
+                        var link=advert.link.replace('http://','');
+                        advert.link='https://'+link;
+                        //console.log(advert.link)
+                        //return
+                    }
+                    
+
+                }
+                //console.log(phantomSupport)
             getData.GetRawData(advert.link,phantomSupport,qTextVersion.websitename,1,function(err,resp,body)
             {
-                if(resp.statusCode==200)
-                {
-                    console.log('GOOD ONE:'+advert.link);
+                if(phantomSupport=='true')
+                {   
+                    
+                    //console.log(body)
+                    body=JSON.parse(body)
+                    //sconsole.log(body.statusCode);
+                    if(body.statusCode==200)
+                    {
+                        console.log('GOOD ONE:'+advert.link);
+                    }
+                    else
+                    {
+                        console.log('BAD ONE:'+advert.link);
+                        removeAdvertFromDatabase(dbCollection,advert);
+                    }
                 }
                 else
                 {
-                    console.log('BAD ONE:'+advert.link);
+                    if(resp.statusCode==200)
+                    {
+                        console.log('GOOD ONE:'+advert.link);
+                    }
+                    else
+                    {
+                        console.log('BAD ONE:'+advert.link);
+                        removeAdvertFromDatabase(dbCollection,advert);
+                    }
                 }
+                
+                finish();
             })
             
         },function()
         {
-            callback();
+            if(callback)callback();
+            else return 0;
         }) 
+}
+function removeAdvertFromDatabase(dbCollection,advert)
+{
+    dbCollection.remove({_id:new ObjectID(advert._id)},function(err,res)
+    {
+        if(err)console.log(err);
+        console.log(res.result);
+    })
 }
 
 function returnFewElemsFromArray(array,skipCoef)
@@ -111,3 +171,4 @@ function end()
 {
     console.log("WHole DB has been refreshed");
 }
+//startRefreshing();
