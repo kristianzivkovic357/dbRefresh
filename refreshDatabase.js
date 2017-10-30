@@ -6,6 +6,7 @@ var async=require('async')
 var ObjectID = require('mongodb').ObjectID
 var db;
 var websiteListing=[];
+
 mongo.MongoWrapper(function(mongoCon)
 {
     db=mongoCon;
@@ -23,8 +24,10 @@ mongo.MongoWrapper(function(mongoCon)
                 res[i]=JSON.parse(res[i]);
                 websiteListing[res[i].websitename]=res[i];
             }
-            startRefreshing();//start of program
+            //removeExpiredAdsFromAlerts(['https://www.4zida.rs/prodaja/stanovi/novi-sad/oglas/novo-naselje/59f42b1270baeb3f433481e4','https://www.4zida.rs/prodaja/stanovi/beograd/oglas/jug-bogdanova/59f3f30870baeb2bbe320784']);
+            //startRefreshing();//start of program
             //processFewAdverts([{'websitename':'halooglasi','link':'http://www.halooglasi.com/nekretnine/prodaja-zemljista/na-prodaju-plac-od-112-ari-u-pancevu/5425487381592','phantomSupport':'true'}]);
+            limitMatchingsOnNDays()
         }
     })
    
@@ -53,6 +56,7 @@ function startRefreshing()
 var numberToProcess=20;
 function refreshCollection(collection,callback)
 {
+    var listOfExpiredIds=[];
     var dbCollection=db.collection(collection);
     console.log('request started for collection:'+collection);
     dbCollection.find(/*{websitename:"nekretnine"}*/).toArray(function(err,allAdverts)
@@ -71,9 +75,17 @@ function refreshCollection(collection,callback)
                     skipCoef=-1;
                 }
                 else skipCoef++;
-                processFewAdverts(arrayPart,dbCollection,function()
+                processFewAdverts(arrayPart,dbCollection,listOfExpiredIds,function()
                 {
-                    if(skipCoef==-1)return;
+
+                    if(skipCoef==-1)
+                    {
+                        removeExpiredAdsFromAlerts(listOfExpiredIds,function()
+                        {
+                            return;
+                        });
+                        
+                    }
                     else recurse();
                 });
             }
@@ -84,7 +96,7 @@ function refreshCollection(collection,callback)
     })
 }
 
-function processFewAdverts(advertsToProcess,dbCollection,callback)
+function processFewAdverts(advertsToProcess,dbCollection,listOfExpiredIds,callback)
 {
     console.log('few adverts started to process:'+advertsToProcess.length)
         async.each(advertsToProcess,function(advert,finish)
@@ -121,6 +133,7 @@ function processFewAdverts(advertsToProcess,dbCollection,callback)
                     else
                     {
                         console.log('BAD ONE:'+advert.link);
+                        listOfExpiredIds.push(advert.link);
                         removeAdvertFromDatabase(dbCollection,advert);
                     }
                 }
@@ -133,6 +146,7 @@ function processFewAdverts(advertsToProcess,dbCollection,callback)
                     else
                     {
                         console.log('BAD ONE:'+advert.link);
+                        listOfExpiredIds.push(advert.link);
                         removeAdvertFromDatabase(dbCollection,advert);
                     }
                 }
@@ -145,6 +159,38 @@ function processFewAdverts(advertsToProcess,dbCollection,callback)
             if(callback)callback();
             else return 0;
         }) 
+}
+function removeExpiredAdsFromAlerts(listOfExpiredLinks,callback)
+{
+    console.log(listOfExpiredLinks);
+    var users=db.collection('users');
+    users.find({},{_id:0,id:1}).toArray(function(err,res)
+    {
+        async.eachSeries(res,function(matchingCollection,done)
+        {
+            try
+            {
+                var collection=db.collection(matchingCollection.id.toString());
+                collection.remove({idogl:{$in:listOfExpiredLinks}},function(err,res)
+                {
+                    if(err)console.log(err);
+                    else console.log(res.result);
+                    console.log('collection '+matchingCollection.id+' is done');
+                    done();
+                   
+                })
+            }
+            catch(e)
+            {
+                console.log(e);
+            }
+            
+
+        },function()
+        {
+            return;
+        })
+    })
 }
 function removeAdvertFromDatabase(dbCollection,advert)
 {
@@ -170,5 +216,41 @@ function returnFewElemsFromArray(array,skipCoef)
 function end()
 {
     console.log("WHole DB has been refreshed");
+}
+function limitMatchingsOnNDays()
+{/*
+    var users=db.collection('users')
+    users.find({},{_id:0,id:1}).toArray(function(err,res)
+    {
+        async.eachSeries(res,function(matchingCollection,done)
+        {
+            try
+            {
+                var fifteenDaysAgo =new Date();
+                fifteenDaysAgo.setDate(fifteenDaysAgo.getDate()-15)//15 days ago
+                var collection=db.collection(matchingCollection.id.toString());
+                collection.remove({timestamp:{$lt:fifteenDaysAgo},timestamp:{$ne:undefined}},function(err,res)
+                {
+                    if(err)console.log(err);
+                    else console.log(res.result);
+                    console.log('collection '+matchingCollection.id+' is done');
+                    done();
+                   
+                })
+            }
+            catch(e)
+            {
+                console.log(e);
+            }
+            
+
+        },function()
+        {
+            return;
+        })
+    })*/
+    db.createCollection("log", { capped : true, size : 5242880, max : 5000 } )
+    
+    //db.collection('log').createIndex( { "createdAt": 1 }, { expireAfterSeconds:45 } )
 }
 //startRefreshing();
