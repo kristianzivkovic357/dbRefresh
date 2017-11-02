@@ -71,7 +71,7 @@ function refreshCollection(collection,callback)
     var listOfExpiredIds=[];
     var dbCollection=db.collection(collection);
     console.log('request started for collection:'+collection);
-    dbCollection.find({websitename:"halooglasi"}).sort({date:-1}).toArray(function(err,allAdverts)
+    dbCollection.find(/*{websitename:"halooglasi"}*/).sort({date:-1}).toArray(function(err,allAdverts)
     {
         console.log(allAdverts[0].link)
         console.log('adverts retrived:'+allAdverts.length)
