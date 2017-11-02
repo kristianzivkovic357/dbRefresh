@@ -6,6 +6,8 @@ var async=require('async')
 var ObjectID = require('mongodb').ObjectID
 var db;
 var websiteListing=[];
+var debugObj={};
+
 
 mongo.MongoWrapper(function(mongoCon)
 {
@@ -25,13 +27,19 @@ mongo.MongoWrapper(function(mongoCon)
                 websiteListing[res[i].websitename]=res[i];
             }
             //removeExpiredAdsFromAlerts(['https://www.4zida.rs/prodaja/stanovi/novi-sad/oglas/novo-naselje/59f42b1270baeb3f433481e4','https://www.4zida.rs/prodaja/stanovi/beograd/oglas/jug-bogdanova/59f3f30870baeb2bbe320784']);
-            //startRefreshing();//start of program
-            //processFewAdverts([{'websitename':'halooglasi','link':'http://www.halooglasi.com/nekretnine/prodaja-zemljista/na-prodaju-plac-od-112-ari-u-pancevu/5425487381592','phantomSupport':'true'}]);
-            limitMatchingsOnNDays()
+            startRefreshing();//start of program
+            //processFewAdverts([{'websitename':'halooglasi','link':'https://www.halooglasi.com/nekretnine/izdavanje-stanova/novi-beograd---stari-merkator-id22871/54256387157','phantomSupport':'true'}],[]);
+            //limitMatchingsOnNDays()
+            //refreshCollection('Izdavanjestan')
         }
     })
    
 })
+function writeDebug()
+{
+    console.log(JSON.stringify(debugObj));
+}
+setInterval(writeDebug,15000)
 
 function startRefreshing()
 {
@@ -44,6 +52,10 @@ function startRefreshing()
         {
             async.eachSeries(res,function(collectionForScraping,done)
             {
+                debugObj.collection=collectionForScraping.ime;
+                debugObj.numberOfProcessedAds=0;
+                debugObj.goodAds=0;
+                debugObj.badAds=0;
                 refreshCollection(collectionForScraping.ime,function()
                 {
                     done();
@@ -59,9 +71,12 @@ function refreshCollection(collection,callback)
     var listOfExpiredIds=[];
     var dbCollection=db.collection(collection);
     console.log('request started for collection:'+collection);
-    dbCollection.find(/*{websitename:"nekretnine"}*/).toArray(function(err,allAdverts)
+    dbCollection.find({websitename:"halooglasi"}).sort({date:-1}).toArray(function(err,allAdverts)
     {
+        console.log(allAdverts[0].link)
         console.log('adverts retrived:'+allAdverts.length)
+        debugObj.totalAdNumber=allAdverts.length;
+        
         if(err)throw err
         else
         {
@@ -82,6 +97,7 @@ function refreshCollection(collection,callback)
                     {
                         removeExpiredAdsFromAlerts(listOfExpiredIds,function()
                         {
+                            //a
                             return;
                         });
                         
@@ -126,12 +142,20 @@ function processFewAdverts(advertsToProcess,dbCollection,listOfExpiredIds,callba
                     //console.log(body)
                     body=JSON.parse(body)
                     //sconsole.log(body.statusCode);
-                    if(body.statusCode==200)
+                    //if((body.lastUrl!=advert.link))console.log('NEW ADDRESS:'+body.lastUrl);
+                    //if((body.statusCode!=200))console.log('STATUS CODE: '+body.statusCode)
+                    if(body.lastUrl!='https://www.halooglasi.com/404?error=1')
                     {
+                        debugObj.numberOfProcessedAds++;
+                        debugObj.goodAds++;
+                        appendToFile('goodAds.txt',advert.link);
                         console.log('GOOD ONE:'+advert.link);
                     }
                     else
                     {
+                        debugObj.numberOfProcessedAds++;
+                        debugObj.badAds++;
+                        appendToFile('badAds.txt',advert.link);
                         console.log('BAD ONE:'+advert.link);
                         listOfExpiredIds.push(advert.link);
                         removeAdvertFromDatabase(dbCollection,advert);
@@ -139,12 +163,18 @@ function processFewAdverts(advertsToProcess,dbCollection,listOfExpiredIds,callba
                 }
                 else
                 {
-                    if(resp.statusCode==200)
+                    if((resp.statusCode==200)&&(resp.request.uri.href==advert.link))
                     {
+                        debugObj.numberOfProcessedAds++;
+                        debugObj.goodAds++;
+                        appendToFile('goodAds.txt',advert.link);
                         console.log('GOOD ONE:'+advert.link);
                     }
                     else
                     {
+                        debugObj.numberOfProcessedAds++;
+                        debugObj.badAds++;
+                        appendToFile('badAds.txt',advert.link);
                         console.log('BAD ONE:'+advert.link);
                         listOfExpiredIds.push(advert.link);
                         removeAdvertFromDatabase(dbCollection,advert);
@@ -216,6 +246,14 @@ function returnFewElemsFromArray(array,skipCoef)
 function end()
 {
     console.log("WHole DB has been refreshed");
+}
+function appendToFile(file,content,callback)
+{
+    fs.appendFile(file,content,function(err,resp)
+    {
+        if(err)console.log(err)
+        if(callback)callback();
+    })
 }
 function limitMatchingsOnNDays()
 {/*

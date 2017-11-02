@@ -31,6 +31,10 @@ page.onResourceReceived=function(resource)
 		finalObj.statusCode=resource.status;
 	}
 }
+page.onUrlChanged = function(targetUrl) {
+	//console.log('New URL: ' + targetUrl);
+	finalObj.lastUrl=targetUrl;
+  };
 page.onLoadFinished = function(status) 
 {
 	
