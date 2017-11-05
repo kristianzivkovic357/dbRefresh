@@ -17,20 +17,34 @@ mongo.MongoWrapper(function(mongoCon)
         if(err)throw err
         else
         {
-
-            res=res.substr(1);
-            res=res.split("&&||");
-            
-            for(var i in res)
+            fs.readFile('previousState.txt','utf8',function(err,text)
             {
-                res[i]=JSON.parse(res[i]);
-                websiteListing[res[i].websitename]=res[i];
-            }
-            //removeExpiredAdsFromAlerts(['https://www.4zida.rs/prodaja/stanovi/novi-sad/oglas/novo-naselje/59f42b1270baeb3f433481e4','https://www.4zida.rs/prodaja/stanovi/beograd/oglas/jug-bogdanova/59f3f30870baeb2bbe320784']);
-            startRefreshing();//start of program
-            //processFewAdverts([{'websitename':'halooglasi','link':'https://www.halooglasi.com/nekretnine/izdavanje-stanova/novi-beograd---stari-merkator-id22871/54256387157','phantomSupport':'true'}],[]);
-            //limitMatchingsOnNDays()
-            //refreshCollection('Izdavanjestan')
+                if(err)throw err
+                else
+                {
+                    res=res.substr(1);
+                    res=res.split("&&||");
+                    
+                    for(var i in res)
+                    {
+                        res[i]=JSON.parse(res[i]);
+                        websiteListing[res[i].websitename]=res[i];
+                    }
+                    text=JSON.parse(text);
+                    var finished=text.numberOfFinishedInCollection;
+                    var collection=text.collection;
+                    console.log(finished);
+                    console.log(collection)
+                    //removeExpiredAdsFromAlerts(['https://www.4zida.rs/prodaja/stanovi/novi-sad/oglas/novo-naselje/59f42b1270baeb3f433481e4','https://www.4zida.rs/prodaja/stanovi/beograd/oglas/jug-bogdanova/59f3f30870baeb2bbe320784']);
+                    if((collection)&&(finished!=undefined))startRefreshing(collection,finished);//start of program
+                    else startRefreshing();
+                        //processFewAdverts([{'websitename':'halooglasi','link':'https://www.halooglasi.com/nekretnine/izdavanje-stanova/novi-beograd---stari-merkator-id22871/54256387157','phantomSupport':'true'}],[]);
+                    //limitMatchingsOnNDays()
+                    //refreshCollection('Izdavanjestan')
+                }
+                
+            })
+
         }
     })
    
@@ -41,7 +55,7 @@ function writeDebug()
 }
 setInterval(writeDebug,15000)
 
-function startRefreshing()
+function startRefreshing(collectionToStart=0,numberOfFinishedInCollection=undefined)
 {
    
     var collection=db.collection('oglasi');
@@ -50,14 +64,26 @@ function startRefreshing()
         if(err)console.log(err);
         else 
         {
+            dontAskAnymore=0;
+            //console.log(res);process.exit();
             async.eachSeries(res,function(collectionForScraping,done)
             {
+                //console.log(collectionToStart,numberOfFinishedInCollection)
+                if((collectionToStart)&&(numberOfFinishedInCollection!=undefined)&&(!dontAskAnymore))
+                {
+                    if(collectionForScraping.ime!=collectionToStart)return done();
+                    else
+                    {
+                        dontAskAnymore=1;
+                    }
+                }
                 debugObj.collection=collectionForScraping.ime;
                 debugObj.numberOfProcessedAds=0;
                 debugObj.goodAds=0;
                 debugObj.badAds=0;
-                refreshCollection(collectionForScraping.ime,function()
+                refreshCollection(collectionForScraping.ime,numberOfFinishedInCollection,function()
                 {
+                    numberOfFinishedInCollection=0;
                     done();
                 })
             },end);
@@ -66,24 +92,24 @@ function startRefreshing()
 
 }
 var numberToProcess=20;
-function refreshCollection(collection,callback)
+function refreshCollection(collection=0,numberOfFinishedInCollection=0,callback)
 {
     var listOfExpiredIds=[];
     var dbCollection=db.collection(collection);
     console.log('request started for collection:'+collection);
-    dbCollection.find(/*{websitename:"halooglasi"}*/).sort({date:-1}).toArray(function(err,allAdverts)
+    dbCollection.find(/*{websitename:"halooglasi"}*/).skip(numberOfFinishedInCollection*numberToProcess).sort({date:-1}).toArray(function(err,allAdverts)
     {
-        console.log(allAdverts[0].link)
+        //console.log(allAdverts[0].link)
         console.log('adverts retrived:'+allAdverts.length)
         debugObj.totalAdNumber=allAdverts.length;
         
         if(err)throw err
         else
         {
-            var skipCoef=0;
+            var skipCoef=numberOfFinishedInCollection;
             function recurse()
             {
-                var arrayPart=returnFewElemsFromArray(allAdverts,skipCoef);
+                var arrayPart=returnFewElemsFromArray(allAdverts);
                 if(arrayPart.length<numberToProcess)
                 {
                     console.log('End reached');
@@ -92,13 +118,18 @@ function refreshCollection(collection,callback)
                 else skipCoef++;
                 processFewAdverts(arrayPart,dbCollection,listOfExpiredIds,function()
                 {
+                    var previousStateObj={};
+                    previousStateObj.collection=collection;
+                    previousStateObj.numberOfFinishedInCollection= (skipCoef!=-1 ?skipCoef:0);
+                    writeToFile('previousState.txt',JSON.stringify(previousStateObj));
 
                     if(skipCoef==-1)
                     {
+                        skippingInArray=0;//used i  function returnFewAdsFromArray to skip in array
                         removeExpiredAdsFromAlerts(listOfExpiredIds,function()
                         {
                             //a
-                            return;
+                            callback();
                         });
                         
                     }
@@ -193,6 +224,7 @@ function processFewAdverts(advertsToProcess,dbCollection,listOfExpiredIds,callba
 function removeExpiredAdsFromAlerts(listOfExpiredLinks,callback)
 {
     console.log(listOfExpiredLinks);
+    console.log('started ti process expired alerts')
     var users=db.collection('users');
     users.find({},{_id:0,id:1}).toArray(function(err,res)
     {
@@ -218,7 +250,7 @@ function removeExpiredAdsFromAlerts(listOfExpiredLinks,callback)
 
         },function()
         {
-            return;
+            callback();
         })
     })
 }
@@ -230,14 +262,16 @@ function removeAdvertFromDatabase(dbCollection,advert)
         console.log(res.result);
     })
 }
-
-function returnFewElemsFromArray(array,skipCoef)
+var skippingInArray=0;
+function returnFewElemsFromArray(array)
 {
     var arrToReturn=[];
-    var startNum=skipCoef*numberToProcess;
+    var startNum=skippingInArray*numberToProcess;
     var i=startNum;
-    for(;i<startNum+numberToProcess;i++)
+    skippingInArray++;
+    for(;(i<startNum+numberToProcess)&&(i<array.length);i++)
     {
+        //console.log(i)
         arrToReturn.push(array[i]);
     }
     
@@ -255,40 +289,13 @@ function appendToFile(file,content,callback)
         if(callback)callback();
     })
 }
-function limitMatchingsOnNDays()
-{/*
-    var users=db.collection('users')
-    users.find({},{_id:0,id:1}).toArray(function(err,res)
+function writeToFile(file,content,callback)
+{
+    fs.writeFile(file,content,function(err,resp)
     {
-        async.eachSeries(res,function(matchingCollection,done)
-        {
-            try
-            {
-                var fifteenDaysAgo =new Date();
-                fifteenDaysAgo.setDate(fifteenDaysAgo.getDate()-15)//15 days ago
-                var collection=db.collection(matchingCollection.id.toString());
-                collection.remove({timestamp:{$lt:fifteenDaysAgo},timestamp:{$ne:undefined}},function(err,res)
-                {
-                    if(err)console.log(err);
-                    else console.log(res.result);
-                    console.log('collection '+matchingCollection.id+' is done');
-                    done();
-                   
-                })
-            }
-            catch(e)
-            {
-                console.log(e);
-            }
-            
-
-        },function()
-        {
-            return;
-        })
-    })*/
-    db.createCollection("log", { capped : true, size : 5242880, max : 5000 } )
-    
-    //db.collection('log').createIndex( { "createdAt": 1 }, { expireAfterSeconds:45 } )
+        if(err)console.log(err);
+        if(callback)callback();
+    })
 }
+
 //startRefreshing();
