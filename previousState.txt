@@ -1,1 +1,1 @@
-{"collection":"Izdavanjestan","numberOfFinishedInCollection":10}
+{"collection":"prodajastan","numberOfFinishedInCollection":8}

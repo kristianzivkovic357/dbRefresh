@@ -36,6 +36,7 @@ mongo.MongoWrapper(function(mongoCon)
                     console.log(finished);
                     console.log(collection)
                     //removeExpiredAdsFromAlerts(['https://www.4zida.rs/prodaja/stanovi/novi-sad/oglas/novo-naselje/59f42b1270baeb3f433481e4','https://www.4zida.rs/prodaja/stanovi/beograd/oglas/jug-bogdanova/59f3f30870baeb2bbe320784']);
+                    console.log()
                     if((collection)&&(finished!=undefined))startRefreshing(collection,finished);//start of program
                     else startRefreshing();
                         //processFewAdverts([{'websitename':'halooglasi','link':'https://www.halooglasi.com/nekretnine/izdavanje-stanova/novi-beograd---stari-merkator-id22871/54256387157','phantomSupport':'true'}],[]);
@@ -92,55 +93,69 @@ function startRefreshing(collectionToStart=0,numberOfFinishedInCollection=undefi
 
 }
 var numberToProcess=20;
+var MAX_LIMIT_PER_QUERY=10000;
 function refreshCollection(collection=0,numberOfFinishedInCollection=0,callback)
 {
     var listOfExpiredIds=[];
     var dbCollection=db.collection(collection);
     console.log('request started for collection:'+collection);
-    dbCollection.find(/*{websitename:"halooglasi"}*/).skip(numberOfFinishedInCollection*numberToProcess).sort({date:-1}).toArray(function(err,allAdverts)
+    var iterationShouldFinish=0;
+    function iterateThroughDb()
     {
-        //console.log(allAdverts[0].link)
-        console.log('adverts retrived:'+allAdverts.length)
-        debugObj.totalAdNumber=allAdverts.length;
-        
-        if(err)throw err
-        else
-        {
-            var skipCoef=numberOfFinishedInCollection;
-            function recurse()
-            {
-                var arrayPart=returnFewElemsFromArray(allAdverts);
-                if(arrayPart.length<numberToProcess)
-                {
-                    console.log('End reached');
-                    skipCoef=-1;
-                }
-                else skipCoef++;
-                processFewAdverts(arrayPart,dbCollection,listOfExpiredIds,function()
-                {
-                    var previousStateObj={};
-                    previousStateObj.collection=collection;
-                    previousStateObj.numberOfFinishedInCollection= (skipCoef!=-1 ?skipCoef:0);
-                    writeToFile('previousState.txt',JSON.stringify(previousStateObj));
+        console.log('iterateThroughDb is called');
+        console.log('skipping:'+(numberOfFinishedInCollection*numberToProcess))
+        var shouldCallIterateThroughDb=0;
 
-                    if(skipCoef==-1)
+        dbCollection.find(/*{websitename:"halooglasi"}*/).skip(numberOfFinishedInCollection*numberToProcess).limit(MAX_LIMIT_PER_QUERY).sort({date:-1}).toArray(function(err,allAdverts)
+        {
+            if(err)console.log(err)
+            if(allAdverts.length<MAX_LIMIT_PER_QUERY)iterationShouldFinish=1;
+            //console.log(allAdverts[0].link)
+            console.log('adverts retrived:'+allAdverts.length)
+            debugObj.totalAdNumber=allAdverts.length;
+            
+            if(err)throw err
+            else
+            {
+                var skipCoef=numberOfFinishedInCollection;
+                function recurse()
+                {
+                    var arrayPart=returnFewElemsFromArray(allAdverts);
+                    if(arrayPart.length<numberToProcess)
                     {
+                        console.log('End of recurse');
                         skippingInArray=0;//used i  function returnFewAdsFromArray to skip in array
-                        removeExpiredAdsFromAlerts(listOfExpiredIds,function()
-                        {
-                            //a
-                            callback();
-                        });
-                        
+                        if(iterationShouldFinish)skipCoef=-1;
+                        else shouldCallIterateThroughDb=1;
                     }
-                    else recurse();
-                });
+                    else skipCoef++;
+                    processFewAdverts(arrayPart,dbCollection,listOfExpiredIds,function()
+                    {
+                        var previousStateObj={};
+                        previousStateObj.collection=collection;
+                        previousStateObj.numberOfFinishedInCollection= (skipCoef!=-1 ?skipCoef:0);
+                        writeToFile('previousState.txt',JSON.stringify(previousStateObj));
+
+                        if(skipCoef==-1)
+                        {                      
+                            removeExpiredAdsFromAlerts(listOfExpiredIds,function()
+                            {
+                                //a
+                                callback();
+                            });
+                            
+                        }
+                        else if(shouldCallIterateThroughDb) {numberOfFinishedInCollection=skipCoef;iterateThroughDb();}
+                        else recurse();
+                    });
+                }
+                recurse();
+                
+                
             }
-            recurse();
-            
-            
-        }
-    })
+        })
+    }
+    iterateThroughDb();
 }
 
 function processFewAdverts(advertsToProcess,dbCollection,listOfExpiredIds,callback)

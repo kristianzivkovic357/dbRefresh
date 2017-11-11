@@ -1,6 +1,10 @@
+var mongo=require('./mongo');
 
-function t(a=0,b)
+mongo.MongoWrapper(function(db)
 {
-    console.log(a,b);
-}
-t()
+    var collection=db.collection('users');
+    collection.find().limit(1000).toArray(function(err,res)
+    {
+        console.log(res.length)
+    })
+})
