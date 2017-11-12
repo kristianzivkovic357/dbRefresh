@@ -106,7 +106,7 @@ function refreshCollection(collection=0,numberOfFinishedInCollection=0,callback)
         console.log('skipping:'+(numberOfFinishedInCollection*numberToProcess))
         var shouldCallIterateThroughDb=0;
 
-        dbCollection.find(/*{websitename:"halooglasi"}*/).skip(numberOfFinishedInCollection*numberToProcess).limit(MAX_LIMIT_PER_QUERY).sort({date:-1}).toArray(function(err,allAdverts)
+        dbCollection.find(/*{websitename:"halooglasi"}*/).skip(numberOfFinishedInCollection*numberToProcess).limit(MAX_LIMIT_PER_QUERY).toArray(function(err,allAdverts)
         {
             if(err)console.log(err)
             if(allAdverts.length<MAX_LIMIT_PER_QUERY)iterationShouldFinish=1;
